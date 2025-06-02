@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'map_screen.dart';
-import 'permissions_handler.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await requestLocationPermission();
+void main() {
   runApp(const MyApp());
 }
 
@@ -20,3 +17,4 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+

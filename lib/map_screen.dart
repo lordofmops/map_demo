@@ -12,67 +12,56 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   YandexMapController? _controller;
   final locationService = LocationService();
+
   PlacemarkMapObject? userPlacemark;
   Point? userPoint;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadLocation();
-  }
-
-  Future<void> _loadLocation() async {
-    final position = await locationService.getCurrentLocation();
-
-    final point = Point(
-      latitude: position.latitude,
-      longitude: position.longitude,
-    );
-
-    setState(() {
-      userPoint = point;
-      userPlacemark = PlacemarkMapObject(
-        mapId: const MapObjectId('user_location'),
-        point: point,
-        icon: PlacemarkIcon.single(
-          PlacemarkIconStyle(
-            image: BitmapDescriptor.fromAssetImage('assets/user.png'),
-            scale: 2,
-          ),
-        ),
-      );
-    });
-
-    // Если контроллер уже готов — двигаем камеру сразу
-    if (_controller != null) {
-      _moveToUserLocation();
-    }
-  }
-
-  void _moveToUserLocation() {
-    if (_controller != null && userPoint != null) {
-      _controller!.moveCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(target: userPoint!, zoom: 15),
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Карта")),
       body: YandexMap(
-        onMapCreated: (controller) {
+        onMapCreated: (controller) async {
           _controller = controller;
-          _moveToUserLocation(); // ← когда контроллер готов, двигаем камеру
+          await _initUserLocation();
         },
-        mapObjects: [
-          if (userPlacemark != null) userPlacemark!,
-        ],
+        mapObjects: userPlacemark != null ? [userPlacemark!] : [],
       ),
     );
+  }
+
+  Future<void> _initUserLocation() async {
+    try {
+      final position = await locationService.getCurrentLocation();
+
+      userPoint = Point(
+        latitude: position.latitude,
+        longitude: position.longitude,
+      );
+
+      userPlacemark = PlacemarkMapObject(
+        mapId: const MapObjectId('user_location'),
+        point: userPoint!,
+        icon: PlacemarkIcon.single(
+          PlacemarkIconStyle(
+            image: BitmapDescriptor.fromAssetImage('lib/assets/user.png')
+          ),
+        ),
+      );
+
+      await _controller?.moveCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: userPoint!, zoom: 15),
+        ),
+      );
+
+      setState(() {});
+    } catch (e) {
+      debugPrint('Ошибка получения местоположения: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Не удалось получить местоположение')),
+      );
+    }
   }
 }
 
