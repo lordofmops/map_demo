@@ -15,6 +15,8 @@ class _MapScreenState extends State<MapScreen> {
   final List<MapObject> _mapObjects = [];
   Point? _userLocation;
 
+  MapType _currentMapType = MapType.vector;
+
   @override
   void dispose() {
     _mapController.dispose();
@@ -26,6 +28,14 @@ class _MapScreenState extends State<MapScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Карта'),
+        actions: [
+          IconButton(
+            icon: Icon(_currentMapType == MapType.vector
+                ? Icons.satellite
+                : Icons.map),
+            onPressed: _toggleMapType,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -37,6 +47,7 @@ class _MapScreenState extends State<MapScreen> {
                 _drawRoute();
               },
               mapObjects: _mapObjects,
+              mapType: _currentMapType, 
             ),
           ),
         ],
@@ -48,7 +59,6 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  // Метод для инициализации местоположения пользователя
   Future<void> _initUserLocation() async {
     try {
       final position = await _locationService.getCurrentLocation();
@@ -64,7 +74,6 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  // Метод для обновления метки местоположения пользователя на карте
   void _updateUserPlacemark() {
     if (_userLocation == null) return;
 
@@ -84,7 +93,6 @@ class _MapScreenState extends State<MapScreen> {
     setState(() {});
   }
 
-  // Метод для перемещения камеры на местоположение пользователя
   Future<void> _moveToUserLocation() async {
     if (_userLocation == null) return;
 
@@ -96,7 +104,6 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  // Метод для отображения маршрута на карте с помощью PolylineMapObject
   void _drawRoute() async {
     if (_userLocation == null) return;
 
@@ -130,7 +137,7 @@ class _MapScreenState extends State<MapScreen> {
           strokeColor: Colors.blue,
           strokeWidth: 3,
           gapLength: 5,
-          dashLength: 10
+          dashLength: 10,
         );
 
         _mapObjects.add(routePolyline);
@@ -143,7 +150,15 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  // Метод для отображения ошибок на экране
+  // Метод для переключения типа карты
+  void _toggleMapType() {
+    setState(() {
+      _currentMapType = _currentMapType == MapType.vector
+          ? MapType.satellite
+          : MapType.vector;
+    });
+  }
+
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
@@ -151,5 +166,6 @@ class _MapScreenState extends State<MapScreen> {
     debugPrint(message);
   }
 }
+
 
 
