@@ -75,7 +75,7 @@ class _MapScreenState extends State<MapScreen> {
       point: _userLocation!,
       icon: PlacemarkIcon.single(
         PlacemarkIconStyle(
-          image: BitmapDescriptor.fromAssetImage('assets/user.png'),
+          image: BitmapDescriptor.fromAssetImage('lib/assets/user.png'),
           scale: 1.5,
         ),
       ),
@@ -100,28 +100,47 @@ class _MapScreenState extends State<MapScreen> {
   void _drawRoute() async {
     if (_userLocation == null) return;
 
-    // Определение точек маршрута
-    final routePoints = [
-      _userLocation!,
-      Point(latitude: 55.7558, longitude: 37.6176),
-      Point(latitude: 55.7600, longitude: 37.6200),
-    ];
+    const destination = Point(latitude: 55.7600, longitude: 37.6200);
 
-    // Создание объекта Polyline, который будет использоваться для отображения маршрута
-    final polyline = Polyline(
-      points: routePoints
-    );
+    try {
+      final (session, resultFuture) = await YandexDriving.requestRoutes(
+        points: [
+          RequestPoint(
+            point: _userLocation!,
+            requestPointType: RequestPointType.wayPoint,
+          ),
+          RequestPoint(
+            point: destination,
+            requestPointType: RequestPointType.wayPoint,
+          ),
+        ],
+        drivingOptions: const DrivingOptions(),
+      );
 
-    // Добавление PolylineMapObject для отображения маршрута на карте
-    _mapObjects.add(PolylineMapObject(
-      mapId: const MapObjectId('route'),
-      polyline: polyline,
-      outlineColor: Colors.blue,
-      outlineWidth: 6,
-      isVisible: true,
-    ));
+      final result = await resultFuture;
 
-    setState(() {});
+      if (result.routes != null && result.routes!.isNotEmpty) {
+        final route = result.routes!.first;
+
+        _mapObjects.removeWhere((obj) => obj.mapId == const MapObjectId('route'));
+
+        final routePolyline = PolylineMapObject(
+          mapId: const MapObjectId('route'),
+          polyline: route.geometry,
+          strokeColor: Colors.blue,
+          strokeWidth: 3,
+          gapLength: 5,
+          dashLength: 10
+        );
+
+        _mapObjects.add(routePolyline);
+        setState(() {});
+      } else {
+        _showError('Не удалось построить маршрут');
+      }
+    } catch (e) {
+      _showError('Ошибка построения маршрута: $e');
+    }
   }
 
   // Метод для отображения ошибок на экране
